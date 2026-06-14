@@ -177,7 +177,3 @@ This project was built for the **Examinations** theme at FAR AWAY 2026, addressi
 
 
 ---
-
-## 📄 License
-
-MIT License — feel free to fork and build on this.
