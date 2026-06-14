@@ -5,7 +5,7 @@ const API = 'http://localhost:5000/api';
 
 export default function Results({ examId }) {
   const [attempts, setAttempts] = useState([]);
-
+// eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchResults(); }, []);
 
   async function fetchResults() {
