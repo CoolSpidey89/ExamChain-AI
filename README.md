@@ -1,9 +1,6 @@
 # ⛓️ ExamChain — Secure, Fair & Intelligent Examinations
 
-> Built for **FAR AWAY 2026** — India's Biggest International Hackathon
-> Theme: **Examinations** — Reimagine the future of examinations with secure, fair and intelligent solutions.
-
----
+--
 
 ## 🧠 What is ExamChain?
 
@@ -79,7 +76,7 @@ This ensures a student who answers harder questions correctly is rewarded fairly
 | Frontend | React 19, Tailwind-inspired inline CSS |
 | Backend | Node.js, Express 5 |
 | Database | MongoDB Atlas via Mongoose |
-| AI/LLM | OpenRouter API (GPT / LLaMA models) |
+| AI/LLM | OpenRouter API (gpt-oss-120b model) |
 | Hashing | Node.js built-in `crypto` (SHA-256) |
 | Deployment | Vercel (client) + Railway (server) |
 
@@ -178,14 +175,6 @@ This project was built for the **Examinations** theme at FAR AWAY 2026, addressi
 - ✅ **Fairness** — Difficulty-weighted scoring + cohort normalization
 - ✅ **Intelligence** — LLM-powered question variant generation
 
----
-
-## 👨‍💻 Built By
-
-**Om Parida**
-- GitHub: [@CoolSpidey89](https://github.com/CoolSpidey89)
-- LinkedIn: [omparida07](https://linkedin.com/in/omparida07)
-- Portfolio: [om-parida.vercel.app](https://om-parida.vercel.app)
 
 ---
 
