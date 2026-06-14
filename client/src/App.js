@@ -6,7 +6,7 @@ import Home from './pages/Home';
 
 export default function App() {
   const [page, setPage] = useState('home');
-  const [examId] = useState('EXAM001');
+  const [examId] = useState('EXAM001');  // eslint-disable-line no-unused-vars
 
   return (
     <div>
