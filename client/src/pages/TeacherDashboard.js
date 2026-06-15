@@ -9,7 +9,7 @@ export default function TeacherDashboard({ examId }) {
   const [loading, setLoading] = useState(false);
   const [locked, setLocked] = useState(false);
   const [message, setMessage] = useState('');
-
+// eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchQuestions(); }, []);
 
   async function fetchQuestions() {
