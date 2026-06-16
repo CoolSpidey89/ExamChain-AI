@@ -1,12 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentExam from './pages/StudentExam';
 import Results from './pages/Results';
 import Home from './pages/Home';
+import TeacherLogin from './pages/TeacherLogin';
+import StudentLogin from './pages/StudentLogin';
 
 export default function App() {
   const [page, setPage] = useState('home');
-  const [examId] = useState('EXAM001');  // eslint-disable-line no-unused-vars
+  const [user, setUser] = useState(null);
+  const examId = 'EXAM001';
+
+  useEffect(() => {
+    const stored = localStorage.getItem('user');
+    if (stored) setUser(JSON.parse(stored));
+  }, []);
+
+  function handleLogout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setPage('home');
+  }
 
   return (
     <div>
@@ -18,22 +33,53 @@ export default function App() {
         alignItems: 'center',
         borderBottom: '1px solid #334155'
       }}>
-        <span style={{ fontWeight: 'bold', color: '#60a5fa', marginRight: '1rem' }}>
+        <span
+          onClick={() => setPage('home')}
+          style={{ fontWeight: 'bold', color: '#60a5fa', marginRight: '1rem', cursor: 'pointer' }}
+        >
           ⛓️ ExamChain
         </span>
-        <button onClick={() => setPage('home')} style={navBtn}>Home</button>
-        <button onClick={() => setPage('teacher')} style={navBtn}>Teacher</button>
-        <button onClick={() => setPage('student')} style={navBtn}>Student Exam</button>
-        <button onClick={() => setPage('results')} style={navBtn}>Results</button>
-        <span style={{ marginLeft: 'auto', color: '#94a3b8', fontSize: '0.85rem' }}>
-          Exam ID: {examId}
-        </span>
+
+        {!user && (
+          <>
+            <button onClick={() => setPage('teacherLogin')} style={navBtn}>Teacher Login</button>
+            <button onClick={() => setPage('studentLogin')} style={navBtn}>Student Login</button>
+          </>
+        )}
+
+        {user?.role === 'teacher' && (
+          <>
+            <button onClick={() => setPage('teacher')} style={navBtn}>Dashboard</button>
+            <button onClick={() => setPage('results')} style={navBtn}>Results</button>
+          </>
+        )}
+
+        {user?.role === 'student' && (
+          <button onClick={() => setPage('student')} style={navBtn}>My Exam</button>
+        )}
+
+        {user && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+              {user.role === 'student' ? `🎓 ${user.name} (${user.rollNumber})` : `👨‍🏫 ${user.name}`}
+            </span>
+            <button onClick={handleLogout} style={{ ...navBtn, background: '#450a0a', color: '#f87171' }}>
+              Logout
+            </button>
+          </div>
+        )}
       </nav>
 
-      {page === 'home' && <Home setPage={setPage} />}
-      {page === 'teacher' && <TeacherDashboard examId={examId} />}
-      {page === 'student' && <StudentExam examId={examId} />}
+      {page === 'home' && <Home setPage={setPage} user={user} />}
+      {page === 'teacherLogin' && <TeacherLogin setPage={setPage} setUser={setUser} />}
+      {page === 'studentLogin' && <StudentLogin setPage={setPage} setUser={setUser} />}
+      {page === 'teacher' && user?.role === 'teacher' && <TeacherDashboard examId={examId} user={user} />}
+      {page === 'student' && user?.role === 'student' && <StudentExam examId={examId} user={user} />}
       {page === 'results' && <Results examId={examId} />}
+
+      {/* Redirect if wrong role tries to access a page */}
+      {page === 'teacher' && !user && <TeacherLogin setPage={setPage} setUser={setUser} />}
+      {page === 'student' && !user && <StudentLogin setPage={setPage} setUser={setUser} />}
     </div>
   );
 }
