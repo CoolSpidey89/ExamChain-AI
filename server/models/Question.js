@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const QuestionSchema = new mongoose.Schema({
+  examId: { type: String, required: true },
   concept: String,
   difficulty: Number,
   original: String,
@@ -14,7 +15,6 @@ const QuestionSchema = new mongoose.Schema({
   hash: String,
   prevHash: String,
   locked: { type: Boolean, default: false },
-  examId: String,
   timestamp: { type: Date, default: Date.now }
 });
 

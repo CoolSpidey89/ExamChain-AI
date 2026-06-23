@@ -1,13 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const Question = require('../models/Question');
+const Exam = require('../models/Exam');
 const { generateVariants } = require('../utils/llm');
 const { createBlock } = require('../utils/hash');
+const { authMiddleware, teacherOnly } = require('../middleware/auth');
 
-// Teacher adds a question
-router.post('/add', async (req, res) => {
+router.post('/add', authMiddleware, teacherOnly, async (req, res) => {
   try {
     const { original, concept, difficulty, examId } = req.body;
+
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ error: 'Exam not found' });
+    if (exam.teacherId !== req.user.id) return res.status(403).json({ error: 'Not your exam' });
+    if (exam.locked) return res.status(400).json({ error: 'Exam is locked, cannot add questions' });
 
     const variants = await generateVariants(original, concept, difficulty);
 
@@ -33,8 +39,7 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// Get all questions for an exam
-router.get('/:examId', async (req, res) => {
+router.get('/:examId', authMiddleware, async (req, res) => {
   try {
     const questions = await Question.find({ examId: req.params.examId });
     res.json(questions);
@@ -43,11 +48,10 @@ router.get('/:examId', async (req, res) => {
   }
 });
 
-// Lock exam - no more edits
-router.post('/lock/:examId', async (req, res) => {
+router.delete('/reset/:examId', authMiddleware, teacherOnly, async (req, res) => {
   try {
-    await Question.updateMany({ examId: req.params.examId }, { locked: true });
-    res.json({ success: true, message: 'Exam locked on chain' });
+    await Question.deleteMany({ examId: req.params.examId });
+    res.json({ success: true, message: 'Reset done' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

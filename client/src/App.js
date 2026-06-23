@@ -5,6 +5,7 @@ import Results from './pages/Results';
 import Home from './pages/Home';
 import TeacherLogin from './pages/TeacherLogin';
 import StudentLogin from './pages/StudentLogin';
+import StudentResults from './pages/StudentResults';
 
 export default function App() {
   const [page, setPage] = useState('home');
@@ -55,7 +56,10 @@ export default function App() {
         )}
 
         {user?.role === 'student' && (
-          <button onClick={() => setPage('student')} style={navBtn}>My Exam</button>
+          <>
+            <button onClick={() => setPage('student')} style={navBtn}>My Exam</button>
+            <button onClick={() => setPage('studentResults')} style={navBtn}>My Score</button>
+          </>
         )}
 
         {user && (
@@ -76,6 +80,7 @@ export default function App() {
       {page === 'teacher' && user?.role === 'teacher' && <TeacherDashboard examId={examId} user={user} />}
       {page === 'student' && user?.role === 'student' && <StudentExam examId={examId} user={user} />}
       {page === 'results' && <Results examId={examId} />}
+      {page === 'studentResults' && user?.role === 'student' && <StudentResults examId={examId} />}
 
       {/* Redirect if wrong role tries to access a page */}
       {page === 'teacher' && !user && <TeacherLogin setPage={setPage} setUser={setUser} />}

@@ -1,14 +1,20 @@
 function normalizeScores(attempts) {
-  const scores = attempts.map(a => a.rawScore);
-  const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
-  const std = Math.sqrt(
-    scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / scores.length
-  );
+  const sorted = [...attempts].sort((a, b) => a.rawScore - b.rawScore);
+  const n = sorted.length;
 
-  return attempts.map(attempt => ({
-    ...attempt,
-    normalizedScore: std === 0 ? 50 : Math.round(((attempt.rawScore - mean) / std) * 15 + 50)
-  }));
+  // Assign percentile rank to each attempt based on how many scored lower
+  const withPercentile = attempts.map(attempt => {
+    const lowerCount = sorted.filter(a => a.rawScore < attempt.rawScore).length;
+    const sameCount = sorted.filter(a => a.rawScore === attempt.rawScore).length;
+    // Standard percentile rank formula, accounts for ties
+    const percentile = n <= 1
+      ? 100
+      : Math.round(((lowerCount + 0.5 * sameCount) / n) * 100);
+
+    return { ...attempt, normalizedScore: percentile };
+  });
+
+  return withPercentile;
 }
 
 function difficultyWeightedScore(answers) {
