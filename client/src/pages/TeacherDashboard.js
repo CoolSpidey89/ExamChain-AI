@@ -3,19 +3,31 @@ import axios from 'axios';
 
 const API = 'http://localhost:5000/api';
 
-export default function TeacherDashboard({ examId }) {
+export default function TeacherDashboard({ examId, setPage }) {
+  const [exam, setExam] = useState(null);
   const [form, setForm] = useState({ original: '', concept: '', difficulty: 3 });
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [locked, setLocked] = useState(false);
   const [message, setMessage] = useState('');
-// eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchQuestions(); }, []);
+
+  useEffect(() => {
+    fetchExam();
+    fetchQuestions();
+  }, []);
+
+  function authHeader() {
+    const token = localStorage.getItem('token');
+    return { headers: { Authorization: `Bearer ${token}` } };
+  }
+
+  async function fetchExam() {
+    const res = await axios.get(`${API}/exams/${examId}`, authHeader());
+    setExam(res.data);
+  }
 
   async function fetchQuestions() {
-    const res = await axios.get(`${API}/questions/${examId}`);
+    const res = await axios.get(`${API}/questions/${examId}`, authHeader());
     setQuestions(res.data);
-    if (res.data.length > 0 && res.data[0].locked) setLocked(true);
   }
 
   async function handleAdd() {
@@ -23,28 +35,36 @@ export default function TeacherDashboard({ examId }) {
     setLoading(true);
     setMessage('Generating AI variants...');
     try {
-      await axios.post(`${API}/questions/add`, { ...form, examId });
+      await axios.post(`${API}/questions/add`, { ...form, examId }, authHeader());
       setMessage('Question added to chain ✅');
       setForm({ original: '', concept: '', difficulty: 3 });
       fetchQuestions();
     } catch (err) {
-      setMessage('Error: ' + err.message);
+      setMessage('Error: ' + (err.response?.data?.error || err.message));
     }
     setLoading(false);
   }
 
   async function handleLock() {
-    await axios.post(`${API}/questions/lock/${examId}`);
-    setLocked(true);
+    await axios.post(`${API}/exams/lock/${examId}`, {}, authHeader());
     setMessage('Exam locked on blockchain 🔒');
+    fetchExam();
     fetchQuestions();
   }
 
+  if (!exam) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading exam...</div>;
+
   return (
     <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
-      <h2 style={{ color: '#60a5fa', marginBottom: '1.5rem' }}>👨‍🏫 Teacher Dashboard</h2>
+      <button onClick={() => setPage('teacherExams')} style={backBtn}>← Back to Exams</button>
 
-      {!locked && (
+      <h2 style={{ color: '#60a5fa', marginBottom: '0.25rem', marginTop: '1rem' }}>{exam.title}</h2>
+      <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
+        Exam Code: <strong style={{ color: '#93c5fd' }}>{exam.examCode}</strong>
+        {' '}— Share this with students once locked
+      </p>
+
+      {!exam.locked && (
         <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', marginBottom: '2rem' }}>
           <h3 style={{ marginBottom: '1rem', color: '#e2e8f0' }}>Add Question</h3>
           <textarea
@@ -87,12 +107,12 @@ export default function TeacherDashboard({ examId }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h3 style={{ color: '#e2e8f0' }}>Question Chain ({questions.length} blocks)</h3>
-        {!locked && questions.length > 0 && (
+        {!exam.locked && questions.length > 0 && (
           <button onClick={handleLock} style={{ ...btnStyle, background: '#dc2626' }}>
             🔒 Lock Exam
           </button>
         )}
-        {locked && <span style={{ color: '#22c55e' }}>🔒 Exam Locked</span>}
+        {exam.locked && <span style={{ color: '#22c55e' }}>🔒 Exam Locked</span>}
       </div>
 
       {questions.map((q, i) => (
@@ -140,4 +160,14 @@ const btnStyle = {
   color: 'white',
   cursor: 'pointer',
   fontWeight: 'bold'
+};
+
+const backBtn = {
+  background: 'transparent',
+  border: '1px solid #334155',
+  color: '#94a3b8',
+  padding: '0.4rem 0.9rem',
+  borderRadius: '6px',
+  cursor: 'pointer',
+  fontSize: '0.85rem'
 };

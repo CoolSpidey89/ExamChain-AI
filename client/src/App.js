@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import TeacherDashboard from './pages/TeacherDashboard';
+import TeacherExamList from './pages/TeacherExamList';
 import StudentExam from './pages/StudentExam';
+import StudentExamEntry from './pages/StudentExamEntry';
+import StudentResults from './pages/StudentResults';
 import Results from './pages/Results';
 import Home from './pages/Home';
 import TeacherLogin from './pages/TeacherLogin';
 import StudentLogin from './pages/StudentLogin';
-import StudentResults from './pages/StudentResults';
 
 export default function App() {
   const [page, setPage] = useState('home');
   const [user, setUser] = useState(null);
-  const examId = 'EXAM001';
+  const [activeExamId, setActiveExamId] = useState(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
@@ -21,23 +23,14 @@ export default function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    setActiveExamId(null);
     setPage('home');
   }
 
   return (
     <div>
-      <nav style={{
-        background: '#1e293b',
-        padding: '1rem 2rem',
-        display: 'flex',
-        gap: '1rem',
-        alignItems: 'center',
-        borderBottom: '1px solid #334155'
-      }}>
-        <span
-          onClick={() => setPage('home')}
-          style={{ fontWeight: 'bold', color: '#60a5fa', marginRight: '1rem', cursor: 'pointer' }}
-        >
+      <nav style={{ background: '#1e293b', padding: '1rem 2rem', display: 'flex', gap: '1rem', alignItems: 'center', borderBottom: '1px solid #334155' }}>
+        <span onClick={() => setPage('home')} style={{ fontWeight: 'bold', color: '#60a5fa', marginRight: '1rem', cursor: 'pointer' }}>
           ⛓️ ExamChain
         </span>
 
@@ -49,16 +42,13 @@ export default function App() {
         )}
 
         {user?.role === 'teacher' && (
-          <>
-            <button onClick={() => setPage('teacher')} style={navBtn}>Dashboard</button>
-            <button onClick={() => setPage('results')} style={navBtn}>Results</button>
-          </>
+          <button onClick={() => setPage('teacherExams')} style={navBtn}>My Exams</button>
         )}
 
         {user?.role === 'student' && (
           <>
-            <button onClick={() => setPage('student')} style={navBtn}>My Exam</button>
-            <button onClick={() => setPage('studentResults')} style={navBtn}>My Score</button>
+            <button onClick={() => setPage('studentEntry')} style={navBtn}>Join Exam</button>
+            {activeExamId && <button onClick={() => setPage('studentResults')} style={navBtn}>My Score</button>}
           </>
         )}
 
@@ -67,9 +57,7 @@ export default function App() {
             <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
               {user.role === 'student' ? `🎓 ${user.name} (${user.rollNumber})` : `👨‍🏫 ${user.name}`}
             </span>
-            <button onClick={handleLogout} style={{ ...navBtn, background: '#450a0a', color: '#f87171' }}>
-              Logout
-            </button>
+            <button onClick={handleLogout} style={{ ...navBtn, background: '#450a0a', color: '#f87171' }}>Logout</button>
           </div>
         )}
       </nav>
@@ -77,14 +65,33 @@ export default function App() {
       {page === 'home' && <Home setPage={setPage} user={user} />}
       {page === 'teacherLogin' && <TeacherLogin setPage={setPage} setUser={setUser} />}
       {page === 'studentLogin' && <StudentLogin setPage={setPage} setUser={setUser} />}
-      {page === 'teacher' && user?.role === 'teacher' && <TeacherDashboard examId={examId} user={user} />}
-      {page === 'student' && user?.role === 'student' && <StudentExam examId={examId} user={user} />}
-      {page === 'results' && <Results examId={examId} />}
-      {page === 'studentResults' && user?.role === 'student' && <StudentResults examId={examId} />}
 
-      {/* Redirect if wrong role tries to access a page */}
-      {page === 'teacher' && !user && <TeacherLogin setPage={setPage} setUser={setUser} />}
-      {page === 'student' && !user && <StudentLogin setPage={setPage} setUser={setUser} />}
+      {page === 'teacherExams' && user?.role === 'teacher' && (
+        <TeacherExamList setPage={setPage} setActiveExamId={setActiveExamId} />
+      )}
+      {page === 'teacherDashboard' && user?.role === 'teacher' && activeExamId && (
+        <TeacherDashboard examId={activeExamId} setPage={setPage} />
+      )}
+      {page === 'results' && user?.role === 'teacher' && activeExamId && (
+        <Results examId={activeExamId} />
+      )}
+
+      {page === 'studentEntry' && user?.role === 'student' && (
+        <StudentExamEntry setPage={setPage} setActiveExamId={setActiveExamId} />
+      )}
+      {page === 'studentExam' && user?.role === 'student' && activeExamId && (
+        <StudentExam examId={activeExamId} user={user} setPage={setPage} />
+      )}
+      {page === 'studentResults' && user?.role === 'student' && activeExamId && (
+        <StudentResults examId={activeExamId} />
+      )}
+
+      {!user && (page === 'teacherExams' || page === 'teacherDashboard' || page === 'results') && (
+        <TeacherLogin setPage={setPage} setUser={setUser} />
+      )}
+      {!user && (page === 'studentEntry' || page === 'studentExam' || page === 'studentResults') && (
+        <StudentLogin setPage={setPage} setUser={setUser} />
+      )}
     </div>
   );
 }
