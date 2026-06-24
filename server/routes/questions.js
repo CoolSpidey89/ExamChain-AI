@@ -3,7 +3,7 @@ const router = express.Router();
 const Question = require('../models/Question');
 const Exam = require('../models/Exam');
 const { generateVariants } = require('../utils/llm');
-const { createBlock } = require('../utils/hash');
+const { createBlock, verifyChain } = require('../utils/hash');
 const { authMiddleware, teacherOnly } = require('../middleware/auth');
 
 router.post('/add', authMiddleware, teacherOnly, async (req, res) => {
@@ -35,6 +35,78 @@ router.post('/add', authMiddleware, teacherOnly, async (req, res) => {
     res.json({ success: true, question });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Step 1: Generate variants for preview only — NOT saved yet
+router.post('/preview', authMiddleware, teacherOnly, async (req, res) => {
+  try {
+    const { original, concept, difficulty, examId } = req.body;
+
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ error: 'Exam not found' });
+    if (exam.teacherId !== req.user.id) return res.status(403).json({ error: 'Not your exam' });
+    if (exam.locked) return res.status(400).json({ error: 'Exam is locked, cannot add questions' });
+
+    const variants = await generateVariants(original, concept, difficulty);
+
+    // Nothing saved to DB yet — just return for teacher review
+    res.json({ success: true, variants, original, concept, difficulty });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Step 2: Teacher confirms (possibly edited) variants — NOW saved + hashed
+router.post('/confirm', authMiddleware, teacherOnly, async (req, res) => {
+  try {
+    const { original, concept, difficulty, examId, variants } = req.body;
+
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ error: 'Exam not found' });
+    if (exam.teacherId !== req.user.id) return res.status(403).json({ error: 'Not your exam' });
+    if (exam.locked) return res.status(400).json({ error: 'Exam is locked, cannot add questions' });
+
+    if (!variants || variants.length === 0) {
+      return res.status(400).json({ error: 'No variants to save' });
+    }
+
+    const lastQuestion = await Question.findOne({ examId }).sort({ timestamp: -1 });
+    const prevHash = lastQuestion ? lastQuestion.hash : '0';
+    const { hash } = createBlock(variants, prevHash);
+
+    const question = new Question({
+      concept,
+      difficulty,
+      original,
+      variants,
+      hash,
+      prevHash,
+      examId
+    });
+
+    await question.save();
+    res.json({ success: true, question });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Verify chain integrity for an exam
+router.get('/verify/:examId', authMiddleware, teacherOnly, async (req, res) => {
+  try {
+    const exam = await Exam.findById(req.params.examId);
+    if (!exam) return res.status(404).json({ error: 'Exam not found' });
+    if (exam.teacherId !== req.user.id) return res.status(403).json({ error: 'Not your exam' });
+
+    const questions = await Question.find({ examId: req.params.examId });
+    const result = verifyChain(questions);
+
+    res.json(result);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
