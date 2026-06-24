@@ -61,7 +61,7 @@ export default function TeacherDashboard({ examId, setPage }) {
       <h2 style={{ color: '#60a5fa', marginBottom: '0.25rem', marginTop: '1rem' }}>{exam.title}</h2>
       <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
         Exam Code: <strong style={{ color: '#93c5fd' }}>{exam.examCode}</strong>
-        {' '}— Share this with students once locked
+        {' '}— Duration: <strong style={{ color: '#93c5fd' }}>{exam.durationMinutes} min</strong>
       </p>
 
       {!exam.locked && (

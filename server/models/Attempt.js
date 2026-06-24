@@ -4,6 +4,8 @@ const AttemptSchema = new mongoose.Schema({
   studentId: String,
   studentName: String,
   examId: String,
+  startedAt: Date,
+  submittedAt: Date,
   answers: [
     {
       questionId: String,

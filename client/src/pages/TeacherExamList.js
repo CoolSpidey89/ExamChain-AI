@@ -6,7 +6,7 @@ const API = 'http://localhost:5000/api';
 export default function TeacherExamList({ setPage, setActiveExamId }) {
   const [exams, setExams] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '' });
+  const [form, setForm] = useState({ title: '', description: '', durationMinutes: 30 });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => { fetchExams(); }, []);
@@ -26,7 +26,7 @@ export default function TeacherExamList({ setPage, setActiveExamId }) {
     await axios.post(`${API}/exams/create`, form, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    setForm({ title: '', description: '' });
+    setForm({ title: '', description: '', durationMinutes: 30 });
     setShowCreate(false);
     setLoading(false);
     fetchExams();
@@ -66,6 +66,18 @@ export default function TeacherExamList({ setPage, setActiveExamId }) {
             style={{ ...inputStyle, marginTop: '0.75rem' }}
             rows={2}
           />
+          <select
+            value={form.durationMinutes}
+            onChange={e => setForm({ ...form, durationMinutes: Number(e.target.value) })}
+            style={{ ...inputStyle, marginTop: '0.75rem' }}
+          >
+            <option value={15}>15 minutes</option>
+            <option value={30}>30 minutes</option>
+            <option value={45}>45 minutes</option>
+            <option value={60}>60 minutes</option>
+            <option value={90}>90 minutes</option>
+            <option value={120}>120 minutes</option>
+          </select>
           <button
             onClick={handleCreate}
             disabled={loading}

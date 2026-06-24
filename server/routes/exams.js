@@ -10,7 +10,7 @@ function generateExamCode() {
 // Teacher creates a new exam
 router.post('/create', authMiddleware, teacherOnly, async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, durationMinutes } = req.body;
 
     let examCode = generateExamCode();
     let existing = await Exam.findOne({ examCode });
@@ -22,6 +22,7 @@ router.post('/create', authMiddleware, teacherOnly, async (req, res) => {
     const exam = new Exam({
       title,
       description,
+      durationMinutes: durationMinutes || 30,
       teacherId: req.user.id,
       teacherName: req.user.name,
       examCode

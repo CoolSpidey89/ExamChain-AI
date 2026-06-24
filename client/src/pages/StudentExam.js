@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const API = 'http://localhost:5000/api';
@@ -10,8 +10,25 @@ export default function StudentExam({ examId, user, setPage }) {
   const [score, setScore] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
+  const submittedRef = useRef(false);
 
   useEffect(() => { startExam(); }, []);
+
+  useEffect(() => {
+    if (timeLeft === null || submitted) return;
+
+    if (timeLeft <= 0) {
+      handleAutoSubmit();
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timeLeft, submitted]);
 
   function authHeader() {
     const token = localStorage.getItem('token');
@@ -21,32 +38,56 @@ export default function StudentExam({ examId, user, setPage }) {
   async function startExam() {
     setLoading(true);
     try {
-      const res = await axios.get(
-        `${API}/exam/start/${examId}/${user.rollNumber}`,
-        authHeader()
-      );
+      const res = await axios.get(`${API}/exam/start/${examId}/${user.rollNumber}`, authHeader());
       setQuestions(res.data.questions);
+
+      const deadline = new Date(res.data.deadline).getTime();
+      const now = Date.now();
+      const remainingSeconds = Math.max(0, Math.floor((deadline - now) / 1000));
+      setTimeLeft(remainingSeconds);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load exam');
+      if (err.response?.data?.expired) {
+        setError('Time is up for this exam. You can no longer attempt it.');
+      } else {
+        setError(err.response?.data?.error || 'Failed to load exam');
+      }
     }
     setLoading(false);
   }
 
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
   async function submitExam() {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+
     const answerArray = questions.map(q => ({
       questionId: q.questionId,
       variantIndex: q.variantIndex,
       selectedAnswer: answers[q.questionId] || ''
     }));
 
-    const res = await axios.post(
-      `${API}/exam/submit`,
-      { studentId: user.rollNumber, studentName: user.name, examId, answers: answerArray },
-      authHeader()
-    );
+    try {
+      const res = await axios.post(
+        `${API}/exam/submit`,
+        { studentId: user.rollNumber, studentName: user.name, examId, answers: answerArray },
+        authHeader()
+      );
+      setScore(res.data.rawScore);
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Submission failed');
+      submittedRef.current = false;
+    }
+  }
 
-    setScore(res.data.rawScore);
-    setSubmitted(true);
+  async function handleAutoSubmit() {
+    if (submittedRef.current) return;
+    await submitExam();
   }
 
   if (loading) return <div style={{ textAlign: 'center', padding: '5rem', color: '#64748b' }}>Loading your exam...</div>;
@@ -72,11 +113,34 @@ export default function StudentExam({ examId, user, setPage }) {
     </div>
   );
 
+  const isLowTime = timeLeft !== null && timeLeft <= 60;
+
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        background: '#0f172a',
+        zIndex: 10,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '2rem',
+        padding: '0.75rem 0'
+      }}>
         <h2 style={{ color: '#60a5fa' }}>📝 {user.name}'s Exam</h2>
-        <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Roll: {user.rollNumber}</span>
+        <div style={{
+          background: isLowTime ? '#450a0a' : '#0f2940',
+          border: `1px solid ${isLowTime ? '#dc2626' : '#3b82f6'}`,
+          color: isLowTime ? '#f87171' : '#93c5fd',
+          padding: '0.5rem 1rem',
+          borderRadius: '8px',
+          fontFamily: 'monospace',
+          fontSize: '1.1rem',
+          fontWeight: 'bold'
+        }}>
+          ⏱️ {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
+        </div>
       </div>
 
       {questions.map((q, i) => (

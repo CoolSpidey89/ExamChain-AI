@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Question = require('../models/Question');
 const Attempt = require('../models/Attempt');
+const Exam = require('../models/Exam');
 const { difficultyWeightedScore } = require('../utils/normalize');
 const { authMiddleware, studentOnly } = require('../middleware/auth');
 
@@ -9,19 +10,41 @@ const { authMiddleware, studentOnly } = require('../middleware/auth');
 router.get('/start/:examId/:studentId', authMiddleware, studentOnly, async (req, res) => {
   try {
     const { examId, studentId } = req.params;
+
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ error: 'Exam not found' });
+
     const questions = await Question.find({ examId, locked: true });
 
     if (questions.length === 0) {
       return res.status(400).json({ error: 'Exam not found or not locked yet' });
     }
 
-    const existing = await Attempt.findOne({ examId, studentId });
-    if (existing) {
+    let attempt = await Attempt.findOne({ examId, studentId });
+
+    if (attempt && attempt.submittedAt) {
       return res.status(400).json({ error: 'Already attempted this exam' });
     }
 
-    // For each question, find which variants have already been assigned to other students
-    const allAttempts = await Attempt.find({ examId });
+    // If no attempt exists yet, this is the first time they're starting — record start time
+    if (!attempt) {
+      attempt = new Attempt({
+        studentId,
+        examId,
+        startedAt: new Date(),
+        answers: []
+      });
+      await attempt.save();
+    }
+
+    const deadline = new Date(attempt.startedAt.getTime() + exam.durationMinutes * 60000);
+    const now = new Date();
+
+    if (now >= deadline) {
+      return res.status(400).json({ error: 'Time is up for this exam', expired: true });
+    }
+
+    const allAttempts = await Attempt.find({ examId, submittedAt: { $ne: null } });
 
     const studentExamQuestions = [];
 
@@ -31,12 +54,10 @@ router.get('/start/:examId/:studentId', authMiddleware, studentOnly, async (req,
         .filter(ans => ans.questionId === q._id.toString())
         .map(ans => ans.variantIndex);
 
-      // Find variants not yet used by anyone
       const availableIndexes = q.variants
         .map((_, idx) => idx)
         .filter(idx => !usedVariantIndexes.includes(idx));
 
-      // If all variants used (more students than variants), fall back to random
       const pool = availableIndexes.length > 0
         ? availableIndexes
         : q.variants.map((_, idx) => idx);
@@ -53,7 +74,12 @@ router.get('/start/:examId/:studentId', authMiddleware, studentOnly, async (req,
       });
     }
 
-    res.json({ questions: studentExamQuestions });
+    res.json({
+      questions: studentExamQuestions,
+      startedAt: attempt.startedAt,
+      durationMinutes: exam.durationMinutes,
+      deadline
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -63,6 +89,17 @@ router.get('/start/:examId/:studentId', authMiddleware, studentOnly, async (req,
 router.post('/submit', authMiddleware, studentOnly, async (req, res) => {
   try {
     const { studentId, studentName, examId, answers } = req.body;
+
+    const exam = await Exam.findById(examId);
+    const attempt = await Attempt.findOne({ examId, studentId });
+
+    if (!attempt) return res.status(400).json({ error: 'No active attempt found. Start the exam first.' });
+    if (attempt.submittedAt) return res.status(400).json({ error: 'Already submitted' });
+
+    // Server-side deadline check — cannot be bypassed by editing frontend
+    const deadline = new Date(attempt.startedAt.getTime() + exam.durationMinutes * 60000);
+    const now = new Date();
+    const isLate = now > deadline;
 
     const questions = await Question.find({ examId });
     const questionMap = {};
@@ -80,19 +117,18 @@ router.post('/submit', authMiddleware, studentOnly, async (req, res) => {
       };
     });
 
-    const rawScore = difficultyWeightedScore(gradedAnswers);
+    // If submitted late, we still grade it but flag it — teacher's call on policy.
+    // For now: score as 0 if late, since this is an integrity feature.
+    const rawScore = isLate ? 0 : difficultyWeightedScore(gradedAnswers);
 
-    const attempt = new Attempt({
-      studentId,
-      studentName,
-      examId,
-      answers: gradedAnswers,
-      rawScore,
-      normalizedScore: rawScore
-    });
+    attempt.studentName = studentName;
+    attempt.answers = gradedAnswers;
+    attempt.rawScore = rawScore;
+    attempt.normalizedScore = rawScore;
+    attempt.submittedAt = now;
 
     await attempt.save();
-    res.json({ success: true, rawScore });
+    res.json({ success: true, rawScore, isLate });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
