@@ -13,12 +13,20 @@ export default function TeacherDashboard({ examId, setPage }) {
   const [message, setMessage] = useState('');
   const [verifyResult, setVerifyResult] = useState(null);
   const [verifying, setVerifying] = useState(false);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
   useEffect(() => {
     fetchExam();
     fetchQuestions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (questions.length > 0) {
+      handleVerify();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions.length]);
 
   function authHeader() {
     const token = localStorage.getItem('token');
@@ -231,11 +239,6 @@ export default function TeacherDashboard({ examId, setPage }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h3 style={{ color: '#e2e8f0' }}>Question Chain ({questions.length} blocks)</h3>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {questions.length > 0 && (
-            <button onClick={handleVerify} disabled={verifying} style={{ ...btnStyle, background: '#7c3aed' }}>
-              {verifying ? 'Verifying...' : '🔍 Verify Chain'}
-            </button>
-          )}
           {!exam.locked && questions.length > 0 && (
             <button onClick={handleLock} style={{ ...btnStyle, background: '#dc2626' }}>
               🔒 Lock Exam
@@ -250,23 +253,35 @@ export default function TeacherDashboard({ examId, setPage }) {
           background: verifyResult.chainValid ? '#14532d' : '#450a0a',
           border: `1px solid ${verifyResult.chainValid ? '#22c55e' : '#dc2626'}`,
           borderRadius: '8px',
-          padding: '1rem',
-          marginBottom: '1.5rem'
+          padding: '0.75rem 1rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
-          <p style={{ color: verifyResult.chainValid ? '#86efac' : '#f87171', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+          <span style={{ color: verifyResult.chainValid ? '#86efac' : '#f87171', fontWeight: 'bold', fontSize: '0.9rem' }}>
             {verifyResult.chainValid
-              ? `✅ Chain Verified — all ${verifyResult.totalBlocks} blocks intact`
-              : `🚨 TAMPERING DETECTED — chain integrity broken`}
-          </p>
+              ? '🟢 Exam Integrity: Verified'
+              : '🔴 Exam Integrity: Issue Detected'}
+          </span>
           {!verifyResult.chainValid && (
-            <div style={{ fontSize: '0.8rem', color: '#fca5a5', fontFamily: 'monospace' }}>
-              {verifyResult.blocks.filter(b => !b.valid).map(b => (
-                <div key={b.blockIndex}>
-                  Block #{b.blockIndex + 1} ({b.concept}): {!b.hashMatches ? 'content modified' : ''} {!b.linkMatches ? 'chain link broken' : ''}
-                </div>
-              ))}
-            </div>
+            <button
+              onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+              style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+            >
+              {showTechnicalDetails ? 'Hide details' : 'View details'}
+            </button>
           )}
+        </div>
+      )}
+
+      {showTechnicalDetails && verifyResult && !verifyResult.chainValid && (
+        <div style={{ fontSize: '0.8rem', color: '#fca5a5', fontFamily: 'monospace', marginBottom: '1.5rem', background: '#0f172a', padding: '1rem', borderRadius: '8px' }}>
+          {verifyResult.blocks.filter(b => !b.valid).map(b => (
+            <div key={b.blockIndex}>
+              Block #{b.blockIndex + 1} ({b.concept}): {!b.hashMatches ? 'content modified' : ''} {!b.linkMatches ? 'chain link broken' : ''}
+            </div>
+          ))}
         </div>
       )}
 
@@ -283,15 +298,20 @@ export default function TeacherDashboard({ examId, setPage }) {
             <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Difficulty: {q.difficulty}/5</span>
           </div>
           <p style={{ color: '#94a3b8', marginBottom: '0.5rem', fontSize: '0.9rem' }}>{q.original}</p>
-          <div style={{ color: '#475569', fontSize: '0.75rem', fontFamily: 'monospace' }}>
-            Hash: {q.hash?.substring(0, 32)}...
-          </div>
-          <div style={{ color: '#374151', fontSize: '0.75rem', fontFamily: 'monospace' }}>
-            PrevHash: {q.prevHash?.substring(0, 32)}...
-          </div>
-          <div style={{ marginTop: '0.5rem', color: '#64748b', fontSize: '0.8rem' }}>
+          <div style={{ color: '#64748b', fontSize: '0.8rem' }}>
             {q.variants?.length} variants generated
           </div>
+
+          {showTechnicalDetails && (
+            <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #334155' }}>
+              <div style={{ color: '#475569', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                Hash: {q.hash?.substring(0, 32)}...
+              </div>
+              <div style={{ color: '#374151', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                PrevHash: {q.prevHash?.substring(0, 32)}...
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>

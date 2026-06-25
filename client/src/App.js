@@ -8,11 +8,14 @@ import Results from './pages/Results';
 import Home from './pages/Home';
 import TeacherLogin from './pages/TeacherLogin';
 import StudentLogin from './pages/StudentLogin';
+import OTPVerify from './pages/OTPVerify';
+import ForgotPassword from './pages/ForgotPassword';
 
 export default function App() {
   const [page, setPage] = useState('home');
   const [user, setUser] = useState(null);
   const [activeExamId, setActiveExamId] = useState(null);
+  const [verifyEmail, setVerifyEmail] = useState('');
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
@@ -24,6 +27,7 @@ export default function App() {
     localStorage.removeItem('user');
     setUser(null);
     setActiveExamId(null);
+    setVerifyEmail('');
     setPage('home');
   }
 
@@ -63,8 +67,25 @@ export default function App() {
       </nav>
 
       {page === 'home' && <Home setPage={setPage} user={user} />}
-      {page === 'teacherLogin' && <TeacherLogin setPage={setPage} setUser={setUser} />}
-      {page === 'studentLogin' && <StudentLogin setPage={setPage} setUser={setUser} />}
+      {page === 'teacherLogin' && <TeacherLogin setPage={setPage} setUser={setUser} setVerifyEmail={setVerifyEmail} />}
+      {page === 'studentLogin' && <StudentLogin setPage={setPage} setUser={setUser} setVerifyEmail={setVerifyEmail} />}
+      {page === 'teacherOtpVerify' && (
+        <OTPVerify
+          email={verifyEmail}
+          setPage={setPage}
+          setUser={setUser}
+          redirectTo="teacherExams"
+        />
+      )}
+      {page === 'studentOtpVerify' && (
+        <OTPVerify
+          email={verifyEmail}
+          setPage={setPage}
+          setUser={setUser}
+          redirectTo="studentEntry"
+        />
+      )}
+      {page === 'forgotPassword' && <ForgotPassword setPage={setPage} />}
 
       {page === 'teacherExams' && user?.role === 'teacher' && (
         <TeacherExamList setPage={setPage} setActiveExamId={setActiveExamId} />
@@ -87,10 +108,10 @@ export default function App() {
       )}
 
       {!user && (page === 'teacherExams' || page === 'teacherDashboard' || page === 'results') && (
-        <TeacherLogin setPage={setPage} setUser={setUser} />
+        <TeacherLogin setPage={setPage} setUser={setUser} setVerifyEmail={setVerifyEmail} />
       )}
       {!user && (page === 'studentEntry' || page === 'studentExam' || page === 'studentResults') && (
-        <StudentLogin setPage={setPage} setUser={setUser} />
+        <StudentLogin setPage={setPage} setUser={setUser} setVerifyEmail={setVerifyEmail} />
       )}
     </div>
   );

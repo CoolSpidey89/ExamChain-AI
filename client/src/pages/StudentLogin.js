@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API = 'http://localhost:5000/api';
 
-export default function StudentLogin({ setPage, setUser }) {
+export default function StudentLogin({ setPage, setUser, setVerifyEmail }) {
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', rollNumber: '', password: '' });
   const [error, setError] = useState('');
@@ -13,14 +13,24 @@ export default function StudentLogin({ setPage, setUser }) {
     setLoading(true);
     setError('');
     try {
-      const endpoint = mode === 'login' ? '/auth/student/login' : '/auth/student/register';
-      const res = await axios.post(`${API}${endpoint}`, form);
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-      setUser(res.data.user);
-      setPage('student');
+      if (mode === 'register') {
+        await axios.post(`${API}/auth/student/register`, form);
+        setPage('studentOtpVerify');
+        setVerifyEmail(form.email);
+      } else {
+        const res = await axios.post(`${API}/auth/student/login`, form);
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        setUser(res.data.user);
+        setPage('studentEntry');
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong');
+      if (err.response?.data?.needsVerification) {
+        setPage('studentOtpVerify');
+        setVerifyEmail(form.email);
+      } else {
+        setError(err.response?.data?.error || 'Something went wrong');
+      }
     }
     setLoading(false);
   }
@@ -80,6 +90,13 @@ export default function StudentLogin({ setPage, setUser }) {
           onChange={e => setForm({ ...form, password: e.target.value })}
           style={{ ...inputStyle, marginTop: '0.75rem' }}
         />
+
+        <p
+          onClick={() => setPage('forgotPassword')}
+          style={{ color: '#60a5fa', fontSize: '0.8rem', marginTop: '0.5rem', cursor: 'pointer', textAlign: 'right' }}
+        >
+          Forgot password?
+        </p>
 
         {error && (
           <p style={{ color: '#f87171', fontSize: '0.85rem', marginTop: '0.75rem' }}>{error}</p>

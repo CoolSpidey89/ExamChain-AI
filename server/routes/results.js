@@ -61,6 +61,43 @@ router.post('/unrelease/:examId', authMiddleware, teacherOnly, async (req, res) 
   }
 });
 
+// TEACHER VIEW — concept-wise weakness analytics
+router.get('/analytics/:examId', authMiddleware, teacherOnly, async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const attempts = await Attempt.find({ examId, submittedAt: { $ne: null } });
+
+    if (attempts.length === 0) {
+      return res.json({ concepts: [], totalSubmissions: 0 });
+    }
+
+    const conceptStats = {};
+
+    attempts.forEach(attempt => {
+      attempt.answers.forEach(ans => {
+        if (!ans.concept) return;
+        if (!conceptStats[ans.concept]) {
+          conceptStats[ans.concept] = { total: 0, correct: 0 };
+        }
+        conceptStats[ans.concept].total += 1;
+        if (ans.correct) conceptStats[ans.concept].correct += 1;
+      });
+    });
+
+    const concepts = Object.entries(conceptStats).map(([concept, stats]) => ({
+      concept,
+      totalAttempts: stats.total,
+      correctCount: stats.correct,
+      incorrectCount: stats.total - stats.correct,
+      accuracyPercent: Math.round((stats.correct / stats.total) * 100)
+    })).sort((a, b) => a.accuracyPercent - b.accuracyPercent);
+
+    res.json({ concepts, totalSubmissions: attempts.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // STUDENT VIEW — only their own score, only if released
 router.get('/student/:examId', authMiddleware, studentOnly, async (req, res) => {
   try {

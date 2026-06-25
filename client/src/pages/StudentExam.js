@@ -145,9 +145,8 @@ export default function StudentExam({ examId, user, setPage }) {
 
       {questions.map((q, i) => (
         <div key={q.questionId} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>Q{i + 1}. {q.concept}</span>
-            <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Difficulty: {q.difficulty}/5</span>
+          <div style={{ marginBottom: '1rem' }}>
+            <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>Question {i + 1}</span>
           </div>
           <p style={{ color: '#e2e8f0', marginBottom: '1rem' }}>{q.questionText}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

@@ -7,8 +7,12 @@ export default function Results({ examId }) {
   const [attempts, setAttempts] = useState([]);
   const [released, setReleased] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [analytics, setAnalytics] = useState(null);
 
-  useEffect(() => { fetchResults(); }, []);
+  useEffect(() => {
+    fetchResults();
+    fetchAnalytics();
+  }, []);
 
   async function fetchResults() {
     const token = localStorage.getItem('token');
@@ -17,6 +21,14 @@ export default function Results({ examId }) {
     });
     setAttempts(res.data.attempts);
     setReleased(res.data.released);
+  }
+
+  async function fetchAnalytics() {
+    const token = localStorage.getItem('token');
+    const res = await axios.get(`${API}/results/analytics/${examId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setAnalytics(res.data);
   }
 
   async function handleRelease() {
@@ -81,6 +93,42 @@ export default function Results({ examId }) {
         <StatCard label="Average Percentile" value={Math.round(attempts.reduce((a, b) => a + b.normalizedScore, 0) / attempts.length)} />
         <StatCard label="Top Percentile" value={Math.max(...attempts.map(a => a.normalizedScore))} />
       </div>
+
+      {analytics && analytics.concepts.length > 0 && (
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{ color: '#e2e8f0', marginBottom: '1rem' }}>📉 Concept-wise Performance</h3>
+          {analytics.concepts.map(c => (
+            <div key={c.concept} style={{
+              background: '#1e293b',
+              border: '1px solid #334155',
+              borderRadius: '8px',
+              padding: '1rem',
+              marginBottom: '0.75rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{c.concept}</span>
+                <span style={{
+                  color: c.accuracyPercent < 50 ? '#f87171' : c.accuracyPercent < 75 ? '#fbbf24' : '#22c55e',
+                  fontWeight: 'bold'
+                }}>
+                  {c.accuracyPercent}% correct
+                </span>
+              </div>
+              <div style={{ background: '#0f172a', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
+                <div style={{
+                  width: `${c.accuracyPercent}%`,
+                  height: '100%',
+                  background: c.accuracyPercent < 50 ? '#dc2626' : c.accuracyPercent < 75 ? '#f59e0b' : '#22c55e',
+                  borderRadius: '999px'
+                }} />
+              </div>
+              <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                {c.correctCount} correct / {c.incorrectCount} incorrect out of {c.totalAttempts} attempts
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>

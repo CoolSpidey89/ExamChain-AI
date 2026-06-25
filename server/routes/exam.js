@@ -110,6 +110,7 @@ router.post('/submit', authMiddleware, studentOnly, async (req, res) => {
       const correctAnswer = q.variants[ans.variantIndex].correctAnswer;
       return {
         questionId: ans.questionId,
+        concept: q.concept,
         variantIndex: ans.variantIndex,
         selectedAnswer: ans.selectedAnswer,
         correct: ans.selectedAnswer === correctAnswer,

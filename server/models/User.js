@@ -5,7 +5,12 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['teacher', 'student'], required: true },
-  rollNumber: { type: String }, // only for students
+  rollNumber: { type: String },
+  verified: { type: Boolean, default: false },
+  otp: String,
+  otpExpiry: Date,
+  resetOtp: String,
+  resetOtpExpiry: Date,
   timestamp: { type: Date, default: Date.now }
 });
 

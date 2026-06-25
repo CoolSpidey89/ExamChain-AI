@@ -9,6 +9,7 @@ const AttemptSchema = new mongoose.Schema({
   answers: [
     {
       questionId: String,
+      concept: String,
       variantIndex: Number,
       selectedAnswer: String,
       correct: Boolean,
