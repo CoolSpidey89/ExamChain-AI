@@ -1,7 +1,13 @@
 require('dotenv').config({ path: __dirname + '/../.env' });
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD
+  }
+});
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -12,17 +18,15 @@ async function sendOTPEmail(toEmail, name, otp, purpose) {
     ? 'Verify your ExamChain account'
     : 'Reset your ExamChain password';
 
-  const heading = purpose === 'verify'
-    ? 'Verify Your Email'
-    : 'Reset Your Password';
+  const heading = purpose === 'verify' ? 'Verify Your Email' : 'Reset Your Password';
 
   const message = purpose === 'verify'
     ? `Hi ${name}, use the code below to verify your ExamChain account.`
     : `Hi ${name}, use the code below to reset your ExamChain password.`;
 
   try {
-    await resend.emails.send({
-      from: 'ExamChain <onboarding@resend.dev>',
+    await transporter.sendMail({
+      from: `"ExamChain" <${process.env.GMAIL_USER}>`,
       to: toEmail,
       subject,
       html: `
