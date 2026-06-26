@@ -6,12 +6,10 @@ function createBlock(variants, prevHash) {
   return { hash, prevHash };
 }
 
-// Recompute a block's hash from its actual stored content + prevHash
-// and compare against the stored hash. Also checks chain linkage.
 function verifyChain(questions) {
-  const sorted = [...questions].sort(
-    (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-  );
+  const sorted = [...questions]
+    .map(q => (q.toObject ? q.toObject() : q))
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
   const blockResults = [];
   let chainValid = true;

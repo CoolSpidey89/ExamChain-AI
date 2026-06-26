@@ -6,39 +6,6 @@ const { generateVariants } = require('../utils/llm');
 const { createBlock, verifyChain } = require('../utils/hash');
 const { authMiddleware, teacherOnly } = require('../middleware/auth');
 
-router.post('/add', authMiddleware, teacherOnly, async (req, res) => {
-  try {
-    const { original, concept, difficulty, examId } = req.body;
-
-    const exam = await Exam.findById(examId);
-    if (!exam) return res.status(404).json({ error: 'Exam not found' });
-    if (exam.teacherId !== req.user.id) return res.status(403).json({ error: 'Not your exam' });
-    if (exam.locked) return res.status(400).json({ error: 'Exam is locked, cannot add questions' });
-
-    const variants = await generateVariants(original, concept, difficulty);
-
-    const lastQuestion = await Question.findOne({ examId }).sort({ timestamp: -1 });
-    const prevHash = lastQuestion ? lastQuestion.hash : '0';
-    const { hash } = createBlock(variants, prevHash);
-
-    const question = new Question({
-      concept,
-      difficulty,
-      original,
-      variants,
-      hash,
-      prevHash,
-      examId
-    });
-
-    await question.save();
-    res.json({ success: true, question });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Step 1: Generate variants for preview only — NOT saved yet
 router.post('/preview', authMiddleware, teacherOnly, async (req, res) => {
   try {
@@ -95,7 +62,8 @@ router.post('/confirm', authMiddleware, teacherOnly, async (req, res) => {
   }
 });
 
-// Verify chain integrity for an exam
+// Verify chain integrity for an exam — NOT exposed in teacher UI.
+// Used internally / for demo purposes only (call directly via API or admin tool).
 router.get('/verify/:examId', authMiddleware, teacherOnly, async (req, res) => {
   try {
     const exam = await Exam.findById(req.params.examId);
@@ -111,6 +79,7 @@ router.get('/verify/:examId', authMiddleware, teacherOnly, async (req, res) => {
   }
 });
 
+// Get all questions for an exam (teacher dashboard list)
 router.get('/:examId', authMiddleware, async (req, res) => {
   try {
     const questions = await Question.find({ examId: req.params.examId });
@@ -120,6 +89,7 @@ router.get('/:examId', authMiddleware, async (req, res) => {
   }
 });
 
+// Reset/delete all questions for an exam (used during testing)
 router.delete('/reset/:examId', authMiddleware, teacherOnly, async (req, res) => {
   try {
     await Question.deleteMany({ examId: req.params.examId });

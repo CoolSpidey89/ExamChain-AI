@@ -7,6 +7,7 @@ const QuestionSchema = new mongoose.Schema({
   original: String,
   variants: [
     {
+      _id: false,
       questionText: String,
       options: [String],
       correctAnswer: String
