@@ -283,3 +283,78 @@
   .t-glow span { animation: none; }
   .page-head, .exam-card, .dash-head, .form-card, .review-panel, .q-row, .seal-badge { animation: none; opacity: 1; }
 }
+
+.navbar {
+  position: relative;
+  z-index: 50;
+  background: rgba(11,14,20,0.92);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(245,240,230,0.1);
+  padding: 0 2rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.nav-brand {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 1.2rem;
+  color: #F5F0E6;
+  cursor: pointer;
+  margin-right: 1.5rem;
+}
+.nav-brand span { color: #E5C158; }
+
+.nav-btn {
+  background: rgba(245,240,230,0.06);
+  border: 1px solid rgba(245,240,230,0.12);
+  color: #F5F0E6;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.nav-btn:hover {
+  background: rgba(245,240,230,0.12);
+  border-color: rgba(201,162,39,0.4);
+  transform: translateY(-1px);
+}
+.nav-btn.student-variant:hover {
+  border-color: rgba(45,106,79,0.5);
+}
+
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-user {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: rgba(245,240,230,0.55);
+}
+
+.nav-logout {
+  background: rgba(155,34,38,0.12);
+  border: 1px solid rgba(155,34,38,0.4);
+  color: #E7A0A2;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.nav-logout:hover {
+  background: rgba(155,34,38,0.22);
+  transform: translateY(-1px);
+}

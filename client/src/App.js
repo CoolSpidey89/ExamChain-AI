@@ -10,6 +10,7 @@ import TeacherLogin from './pages/TeacherLogin';
 import StudentLogin from './pages/StudentLogin';
 import OTPVerify from './pages/OTPVerify';
 import ForgotPassword from './pages/ForgotPassword';
+import './Teacher.css';
 
 export default function App() {
   const [page, setPage] = useState('home');
@@ -27,63 +28,52 @@ export default function App() {
     localStorage.removeItem('user');
     setUser(null);
     setActiveExamId(null);
-    setVerifyEmail('');
     setPage('home');
   }
 
   return (
     <div>
-      <nav style={{ background: '#1e293b', padding: '1rem 2rem', display: 'flex', gap: '1rem', alignItems: 'center', borderBottom: '1px solid #334155' }}>
-        <span onClick={() => setPage('home')} style={{ fontWeight: 'bold', color: '#60a5fa', marginRight: '1rem', cursor: 'pointer' }}>
-          ⛓️ ExamChain
+      <nav className="navbar">
+        <span className="nav-brand" onClick={() => setPage('home')}>
+          Exam<span>Chain</span>
         </span>
 
-        {!user && (
-          <>
-            <button onClick={() => setPage('teacherLogin')} style={navBtn}>Teacher Login</button>
-            <button onClick={() => setPage('studentLogin')} style={navBtn}>Student Login</button>
-          </>
-        )}
+        <button className="nav-btn" onClick={() => setPage('home')}>Home</button>
 
         {user?.role === 'teacher' && (
-          <button onClick={() => setPage('teacherExams')} style={navBtn}>My Exams</button>
+          <button className="nav-btn" onClick={() => setPage('teacherExams')}>Teacher Dashboard</button>
         )}
 
         {user?.role === 'student' && (
           <>
-            <button onClick={() => setPage('studentEntry')} style={navBtn}>Join Exam</button>
-            {activeExamId && <button onClick={() => setPage('studentResults')} style={navBtn}>My Score</button>}
+            <button className="nav-btn student-variant" onClick={() => setPage('studentEntry')}>Student Dashboard</button>
+            {activeExamId && (
+              <button className="nav-btn student-variant" onClick={() => setPage('studentResults')}>Results</button>
+            )}
           </>
         )}
 
-        {user && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
-              {user.role === 'student' ? `🎓 ${user.name} (${user.rollNumber})` : `👨‍🏫 ${user.name}`}
-            </span>
-            <button onClick={handleLogout} style={{ ...navBtn, background: '#450a0a', color: '#f87171' }}>Logout</button>
-          </div>
-        )}
+        <div className="nav-right">
+          {user && (
+            <>
+              <span className="nav-user">
+                {user.role === 'student' ? `🎓 ${user.name} (${user.rollNumber})` : `🗂️ ${user.name}`}
+              </span>
+              <button className="nav-logout" onClick={handleLogout}>Logout</button>
+            </>
+          )}
+        </div>
       </nav>
 
       {page === 'home' && <Home setPage={setPage} user={user} />}
       {page === 'teacherLogin' && <TeacherLogin setPage={setPage} setUser={setUser} setVerifyEmail={setVerifyEmail} />}
       {page === 'studentLogin' && <StudentLogin setPage={setPage} setUser={setUser} setVerifyEmail={setVerifyEmail} />}
+
       {page === 'teacherOtpVerify' && (
-        <OTPVerify
-          email={verifyEmail}
-          setPage={setPage}
-          setUser={setUser}
-          redirectTo="teacherExams"
-        />
+        <OTPVerify email={verifyEmail} setPage={setPage} setUser={setUser} redirectTo="teacherExams" />
       )}
       {page === 'studentOtpVerify' && (
-        <OTPVerify
-          email={verifyEmail}
-          setPage={setPage}
-          setUser={setUser}
-          redirectTo="studentEntry"
-        />
+        <OTPVerify email={verifyEmail} setPage={setPage} setUser={setUser} redirectTo="studentEntry" />
       )}
       {page === 'forgotPassword' && <ForgotPassword setPage={setPage} />}
 
@@ -116,13 +106,3 @@ export default function App() {
     </div>
   );
 }
-
-const navBtn = {
-  background: '#334155',
-  color: '#e2e8f0',
-  border: 'none',
-  padding: '0.5rem 1rem',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontSize: '0.9rem'
-};
