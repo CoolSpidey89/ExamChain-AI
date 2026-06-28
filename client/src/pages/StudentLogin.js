@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const API = 'http://localhost:5000/api';
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export default function StudentLogin({ setPage, setUser, setVerifyEmail }) {
   const [mode, setMode] = useState('login');
