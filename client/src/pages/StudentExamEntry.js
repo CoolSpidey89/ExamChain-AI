@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
+import '../Auth.css';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -7,67 +8,88 @@ export default function StudentExamEntry({ setPage, setActiveExamId }) {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [shake, setShake] = useState(false);
+  const inputRef = useRef(null);
+
+  function handleChange(e) {
+    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    setCode(val);
+    if (error) setError('');
+  }
 
   async function handleJoin() {
-    if (!code) return;
+    if (code.length !== 6) {
+      triggerShake();
+      setError('Enter the full 6-character code');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/exams/code/${code.toUpperCase()}`, {
+      const res = await axios.get(`${API}/exams/code/${code}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setActiveExamId(res.data._id);
       setPage('studentExam');
     } catch (err) {
+      triggerShake();
       setError(err.response?.data?.error || 'Invalid exam code');
     }
     setLoading(false);
   }
 
+  function triggerShake() {
+    setShake(true);
+    setTimeout(() => setShake(false), 400);
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') handleJoin();
+  }
+
+  const boxes = Array.from({ length: 6 }, (_, i) => code[i] || '');
+
   return (
-    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#1e293b', padding: '2.5rem', borderRadius: '16px', width: '400px', border: '1px solid #334155', textAlign: 'center' }}>
-        <h2 style={{ color: '#22c55e', marginBottom: '0.5rem' }}>🎓 Enter Exam Code</h2>
-        <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.9rem' }}>
-          Ask your teacher for the 6-character exam code
-        </p>
-        <input
-          placeholder="e.g. A1B2C3"
-          value={code}
-          onChange={e => setCode(e.target.value.toUpperCase())}
-          maxLength={6}
-          style={{
-            width: '100%',
-            background: '#0f172a',
-            border: '1px solid #334155',
-            color: '#e2e8f0',
-            padding: '0.9rem',
-            borderRadius: '8px',
-            fontSize: '1.5rem',
-            textAlign: 'center',
-            letterSpacing: '0.3rem',
-            fontFamily: 'monospace'
-          }}
-        />
-        {error && <p style={{ color: '#f87171', fontSize: '0.85rem', marginTop: '0.75rem' }}>{error}</p>}
-        <button
-          onClick={handleJoin}
-          disabled={loading}
-          style={{
-            width: '100%',
-            marginTop: '1.5rem',
-            padding: '0.75rem',
-            borderRadius: '8px',
-            border: 'none',
-            color: 'white',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            background: '#22c55e'
-          }}
-        >
-          {loading ? 'Checking...' : 'Join Exam'}
-        </button>
+    <div className="auth-page">
+      <div className="auth-glow"><span className="g1"></span><span className="g2"></span></div>
+      <div className="auth-grain"></div>
+
+      <div className="auth-page-inner">
+        <div className={`auth-card entry-card ${shake ? 'error-shake' : ''}`}>
+          <div className="admit-icon">🎫</div>
+          <div className="auth-h1">Enter Exam Code</div>
+          <div className="entry-sub">— ADMIT CODE REQUIRED —</div>
+
+          {error && <div className="auth-error">⚠ {error}</div>}
+
+          <div className="code-boxes" onClick={() => inputRef.current?.focus()}>
+            {boxes.map((char, i) => (
+              <div
+                key={i}
+                className={`code-box ${char ? 'filled' : ''} ${i === code.length ? 'active' : ''}`}
+              >
+                {char || '_'}
+              </div>
+            ))}
+          </div>
+
+          <input
+            ref={inputRef}
+            className="real-input"
+            value={code}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            maxLength={6}
+            autoFocus
+          />
+
+          <button className="auth-submit-btn student" onClick={handleJoin} disabled={loading}>
+            {loading ? 'Checking...' : 'Join Exam'}
+          </button>
+
+          <div className="entry-hint">Ask your teacher for the 6-character code</div>
+        </div>
       </div>
     </div>
   );
