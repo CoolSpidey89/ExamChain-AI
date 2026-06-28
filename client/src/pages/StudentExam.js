@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import '../Exam.css';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export default function StudentExam({ examId, user, setPage }) {
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,16 +18,11 @@ export default function StudentExam({ examId, user, setPage }) {
 
   useEffect(() => {
     if (timeLeft === null || submitted) return;
-
     if (timeLeft <= 0) {
       handleAutoSubmit();
       return;
     }
-
-    const interval = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
-    }, 1000);
-
+    const interval = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(interval);
   }, [timeLeft, submitted]);
 
@@ -39,17 +36,11 @@ export default function StudentExam({ examId, user, setPage }) {
     try {
       const res = await axios.get(`${API}/exam/start/${examId}/${user.rollNumber}`, authHeader());
       setQuestions(res.data.questions);
-
       const deadline = new Date(res.data.deadline).getTime();
       const now = Date.now();
-      const remainingSeconds = Math.max(0, Math.floor((deadline - now) / 1000));
-      setTimeLeft(remainingSeconds);
+      setTimeLeft(Math.max(0, Math.floor((deadline - now) / 1000)));
     } catch (err) {
-      if (err.response?.data?.expired) {
-        setError('Time is up for this exam. You can no longer attempt it.');
-      } else {
-        setError(err.response?.data?.error || 'Failed to load exam');
-      }
+      setError(err.response?.data?.expired ? 'Time is up for this exam. You can no longer attempt it.' : (err.response?.data?.error || 'Failed to load exam'));
     }
     setLoading(false);
   }
@@ -71,11 +62,7 @@ export default function StudentExam({ examId, user, setPage }) {
     }));
 
     try {
-      await axios.post(
-        `${API}/exam/submit`,
-        { studentId: user.rollNumber, studentName: user.name, examId, answers: answerArray },
-        authHeader()
-      );
+      await axios.post(`${API}/exam/submit`, { studentId: user.rollNumber, studentName: user.name, examId, answers: answerArray }, authHeader());
       setSubmitted(true);
     } catch (err) {
       setError(err.response?.data?.error || 'Submission failed');
@@ -88,90 +75,93 @@ export default function StudentExam({ examId, user, setPage }) {
     await submitExam();
   }
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '5rem', color: '#64748b' }}>Loading your exam...</div>;
+  if (loading) return <div className="exam-take-page"><div className="ex-inner"><div className="ex-center-msg">Loading your exam...</div></div></div>;
 
   if (error) return (
-    <div style={{ textAlign: 'center', padding: '5rem' }}>
-      <p style={{ color: '#f87171', marginBottom: '1rem' }}>{error}</p>
-      <button onClick={() => setPage('studentEntry')} style={{ background: '#334155', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', cursor: 'pointer' }}>
-        Try Another Code
-      </button>
+    <div className="exam-take-page">
+      <div className="ex-inner">
+        <div className="ex-center-msg">
+          <p style={{ color: '#E7A0A2', marginBottom: '1.2rem' }}>{error}</p>
+          <button className="ex-error-btn" onClick={() => setPage('studentEntry')}>Try Another Code</button>
+        </div>
+      </div>
     </div>
   );
 
   if (submitted) return (
-    <div style={{ textAlign: 'center', padding: '5rem' }}>
-      <h2 style={{ color: '#22c55e', fontSize: '2rem' }}>✅ Thank you for appearing in the exam</h2>
-      <p style={{ color: '#94a3b8', marginTop: '1rem', fontSize: '1.05rem' }}>
-        Your responses have been recorded.
-      </p>
-      <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
-        Your score and percentile will be available once your teacher releases results.
-      </p>
+    <div className="exam-take-page">
+      <div className="ex-inner">
+        <div className="ex-center-msg">
+          <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: '1.8rem', color: '#6FBF96', marginBottom: '1rem' }}>
+            ✅ Thank you for appearing in the exam
+          </h2>
+          <p style={{ color: 'rgba(245,240,230,0.7)', fontSize: '1.05rem', marginBottom: '0.5rem' }}>
+            Your responses have been recorded.
+          </p>
+          <p style={{ color: 'rgba(245,240,230,0.45)' }}>
+            Your score and percentile will be available once your teacher releases results.
+          </p>
+        </div>
+      </div>
     </div>
   );
 
   const isLowTime = timeLeft !== null && timeLeft <= 60;
+  const answeredCount = Object.keys(answers).length;
+  const progressPercent = Math.round((answeredCount / questions.length) * 100);
+  const q = questions[currentIndex];
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        background: '#0f172a',
-        zIndex: 10,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '2rem',
-        padding: '0.75rem 0'
-      }}>
-        <h2 style={{ color: '#60a5fa' }}>📝 {user.name}'s Exam</h2>
-        <div style={{
-          background: isLowTime ? '#450a0a' : '#0f2940',
-          border: `1px solid ${isLowTime ? '#dc2626' : '#3b82f6'}`,
-          color: isLowTime ? '#f87171' : '#93c5fd',
-          padding: '0.5rem 1rem',
-          borderRadius: '8px',
-          fontFamily: 'monospace',
-          fontSize: '1.1rem',
-          fontWeight: 'bold'
-        }}>
-          ⏱️ {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
-        </div>
-      </div>
+    <div className="exam-take-page">
+      <div className="ex-glow"><span className="g1"></span><span className="g2"></span></div>
 
-      {questions.map((q, i) => (
-        <div key={q.questionId} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>Question {i + 1}</span>
+      <div className="ex-inner">
+        <div className="exam-header">
+          <div className="header-left">
+            <div className="exam-name">📝 {user.name}'s Exam</div>
+            <div className="progress-text">Question {currentIndex + 1} of {questions.length}</div>
+            <div className="progress-bar-track">
+              <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
+            </div>
           </div>
-          <p style={{ color: '#e2e8f0', marginBottom: '1rem' }}>{q.questionText}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div className={`timer ${isLowTime ? 'urgent' : ''}`}>
+            ⏱ {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
+          </div>
+        </div>
+
+        {q && (
+          <div className="q-card" key={q.questionId}>
+            <div className="q-label">Question {currentIndex + 1}</div>
+            <div className="q-text">{q.questionText}</div>
             {q.options.map((opt, j) => (
-              <label key={j} style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 1rem',
-                background: answers[q.questionId] === opt[0] ? '#1e3a5f' : '#0f172a',
-                border: `1px solid ${answers[q.questionId] === opt[0] ? '#3b82f6' : '#334155'}`,
-                borderRadius: '8px', cursor: 'pointer'
-              }}>
-                <input
-                  type="radio"
-                  name={q.questionId}
-                  value={opt[0]}
-                  checked={answers[q.questionId] === opt[0]}
-                  onChange={() => setAnswers({ ...answers, [q.questionId]: opt[0] })}
-                />
-                <span style={{ color: '#e2e8f0' }}>{opt}</span>
-              </label>
+              <div
+                key={j}
+                className={`opt ${answers[q.questionId] === opt[0] ? 'selected' : ''}`}
+                onClick={() => setAnswers({ ...answers, [q.questionId]: opt[0] })}
+              >
+                <span className="opt-letter">{opt[0]}</span>
+                <span className="opt-text">{opt.slice(3)}</span>
+              </div>
             ))}
           </div>
-        </div>
-      ))}
+        )}
 
-      <button onClick={submitExam} style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 'bold', background: '#22c55e', fontSize: '1rem' }}>
-        Submit Exam
-      </button>
+        <div className="q-nav">
+          {questions.map((qq, i) => (
+            <div
+              key={qq.questionId}
+              className={`dot ${answers[qq.questionId] ? 'answered' : ''} ${i === currentIndex ? 'current' : ''}`}
+              onClick={() => setCurrentIndex(i)}
+            >
+              {i + 1}
+            </div>
+          ))}
+        </div>
+
+        <div className="submit-row">
+          <button className="exam-submit-btn" onClick={submitExam}>Submit Exam</button>
+        </div>
+      </div>
     </div>
   );
 }
