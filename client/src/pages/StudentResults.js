@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../Results.css';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -22,43 +23,49 @@ export default function StudentResults({ examId }) {
   }
 
   if (error) return (
-    <div style={{ textAlign: 'center', padding: '5rem', color: '#f87171' }}>{error}</div>
+    <div className="student-results-page">
+      <div className="student-reveal">
+        <p style={{ color: '#E7A0A2' }}>{error}</p>
+      </div>
+    </div>
   );
 
   if (!data) return (
-    <div style={{ textAlign: 'center', padding: '5rem', color: '#64748b' }}>Loading...</div>
+    <div className="student-results-page">
+      <div className="student-reveal">Loading...</div>
+    </div>
   );
 
   if (!data.released) return (
-    <div style={{ textAlign: 'center', padding: '5rem' }}>
-      <h2 style={{ color: '#f59e0b', fontSize: '1.8rem' }}>🔒 Scores Not Released Yet</h2>
-      <p style={{ color: '#64748b', marginTop: '1rem' }}>{data.message}</p>
+    <div className="student-results-page">
+      <div className="student-reveal">
+        <div className="locked-card">
+          <div className="lock-icon">🔒</div>
+          <div className="locked-title">Scores Not Released Yet</div>
+          <div className="locked-sub">{data.message}</div>
+        </div>
+      </div>
     </div>
   );
 
   return (
-    <div style={{ textAlign: 'center', padding: '5rem' }}>
-      <h2 style={{ color: '#60a5fa', fontSize: '1.5rem', marginBottom: '2rem' }}>Your Result</h2>
-
-      <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '2rem 2.5rem' }}>
-          <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#93c5fd', marginBottom: '0.5rem' }}>
-            {data.correctCount}/{data.totalQuestions}
+    <div className="student-results-page">
+      <div className="student-reveal">
+        <div className="reveal-h1">Your Result</div>
+        <div className="reveal-cards">
+          <div className="reveal-card score">
+            <div className="reveal-num">{data.correctCount}/{data.totalQuestions}</div>
+            <div className="reveal-label">Correct Answers</div>
           </div>
-          <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Correct Answers</p>
+          <div className="reveal-card pctl">
+            <div className="reveal-num">{data.percentileScore}th</div>
+            <div className="reveal-label">Percentile</div>
+          </div>
         </div>
-
-        <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '2rem 2.5rem' }}>
-          <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#22c55e', marginBottom: '0.5rem' }}>
-            {data.percentileScore}th
-          </div>
-          <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Percentile</p>
+        <div className="reveal-foot">
+          Your percentile reflects how you ranked among your peers, accounting for question difficulty.
         </div>
       </div>
-
-      <p style={{ color: '#475569', marginTop: '2rem', fontSize: '0.9rem' }}>
-        Your percentile shows how you ranked among your peers, accounting for question difficulty.
-      </p>
     </div>
   );
 }

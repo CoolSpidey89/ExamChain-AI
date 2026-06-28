@@ -1,212 +1,176 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../Results.css';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export default function Results({ examId }) {
   const [attempts, setAttempts] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [released, setReleased] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [analytics, setAnalytics] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     fetchResults();
     fetchAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function fetchResults() {
+  function authHeader() {
     const token = localStorage.getItem('token');
-    const res = await axios.get(`${API}/results/teacher/${examId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setAttempts(res.data.attempts);
-    setReleased(res.data.released);
+    return { headers: { Authorization: `Bearer ${token}` } };
+  }
+
+  async function fetchResults() {
+    try {
+      const res = await axios.get(`${API}/results/teacher/${examId}`, authHeader());
+      setAttempts(res.data.attempts);
+      setReleased(res.data.released);
+    } catch (err) {
+      setErrorMsg(err.response?.data?.error || 'Failed to load results');
+    }
   }
 
   async function fetchAnalytics() {
-    const token = localStorage.getItem('token');
-    const res = await axios.get(`${API}/results/analytics/${examId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await axios.get(`${API}/results/analytics/${examId}`, authHeader());
     setAnalytics(res.data);
   }
 
   async function handleRelease() {
     setLoading(true);
-    const token = localStorage.getItem('token');
-    await axios.post(`${API}/results/release/${examId}`, {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await axios.post(`${API}/results/release/${examId}`, {}, authHeader());
     setReleased(true);
     setLoading(false);
   }
 
   async function handleUnrelease() {
     setLoading(true);
-    const token = localStorage.getItem('token');
-    await axios.post(`${API}/results/unrelease/${examId}`, {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await axios.post(`${API}/results/unrelease/${examId}`, {}, authHeader());
     setReleased(false);
     setLoading(false);
   }
 
+  if (errorMsg) return (
+    <div className="results-page">
+      <div className="r-inner">
+        <div className="empty-state" style={{ color: '#E7A0A2' }}>{errorMsg}</div>
+      </div>
+    </div>
+  );
+
   if (attempts.length === 0) return (
-    <div style={{ textAlign: 'center', padding: '5rem', color: '#64748b' }}>
-      No submissions yet.
+    <div className="results-page">
+      <div className="r-glow"><span className="g1"></span><span className="g2"></span></div>
+      <div className="r-inner">
+        <div className="empty-state">No submissions yet.</div>
+      </div>
     </div>
   );
 
   const sorted = [...attempts].sort((a, b) => b.normalizedScore - a.normalizedScore);
+  const avgPercentile = Math.round(attempts.reduce((a, b) => a + b.normalizedScore, 0) / attempts.length);
+  const topPercentile = Math.max(...attempts.map(a => a.normalizedScore));
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 style={{ color: '#60a5fa' }}>📊 Teacher Report — {examId}</h2>
-        {!released ? (
-          <button onClick={handleRelease} disabled={loading} style={releaseBtn('#22c55e')}>
-            {loading ? 'Releasing...' : '🔓 Release Scores to Students'}
-          </button>
-        ) : (
-          <button onClick={handleUnrelease} disabled={loading} style={releaseBtn('#dc2626')}>
-            {loading ? 'Hiding...' : '🔒 Hide Scores'}
-          </button>
-        )}
-      </div>
+    <div className="results-page">
+      <div className="r-glow"><span className="g1"></span><span className="g2"></span></div>
 
-      <div style={{
-        background: released ? '#14532d' : '#451a03',
-        border: `1px solid ${released ? '#22c55e' : '#f59e0b'}`,
-        padding: '0.75rem 1rem',
-        borderRadius: '8px',
-        marginBottom: '1.5rem',
-        color: released ? '#86efac' : '#fbbf24',
-        fontSize: '0.9rem'
-      }}>
-        {released
-          ? '✅ Scores are LIVE — students can see their individual percentile now'
-          : '🔒 Scores are HIDDEN — students cannot see their results yet'}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
-        <StatCard label="Total Students" value={attempts.length} />
-        <StatCard label="Average Percentile" value={Math.round(attempts.reduce((a, b) => a + b.normalizedScore, 0) / attempts.length)} />
-        <StatCard label="Top Percentile" value={Math.max(...attempts.map(a => a.normalizedScore))} />
-      </div>
-
-      {analytics && analytics.concepts.length > 0 && (
-        <div style={{ marginBottom: '2rem' }}>
-          <h3 style={{ color: '#e2e8f0', marginBottom: '1rem' }}>📉 Concept-wise Performance</h3>
-          {analytics.concepts.map(c => (
-            <div key={c.concept} style={{
-              background: '#1e293b',
-              border: '1px solid #334155',
-              borderRadius: '8px',
-              padding: '1rem',
-              marginBottom: '0.75rem'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{c.concept}</span>
-                <span style={{
-                  color: c.accuracyPercent < 50 ? '#f87171' : c.accuracyPercent < 75 ? '#fbbf24' : '#22c55e',
-                  fontWeight: 'bold'
-                }}>
-                  {c.accuracyPercent}% correct
-                </span>
-              </div>
-              <div style={{ background: '#0f172a', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
-                <div style={{
-                  width: `${c.accuracyPercent}%`,
-                  height: '100%',
-                  background: c.accuracyPercent < 50 ? '#dc2626' : c.accuracyPercent < 75 ? '#f59e0b' : '#22c55e',
-                  borderRadius: '999px'
-                }} />
-              </div>
-              <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                {c.correctCount} correct / {c.incorrectCount} incorrect out of {c.totalAttempts} attempts
-              </p>
-            </div>
-          ))}
+      <div className="r-inner">
+        <div className="t-head">
+          <div>
+            <div className="eyebrow">Gradebook</div>
+            <div className="t-title">Results</div>
+          </div>
+          {!released ? (
+            <button className="release-btn locked" onClick={handleRelease} disabled={loading}>
+              {loading ? 'Releasing...' : '🔓 Release Scores to Students'}
+            </button>
+          ) : (
+            <button className="release-btn live" onClick={handleUnrelease} disabled={loading}>
+              {loading ? 'Hiding...' : '🔒 Hide Scores'}
+            </button>
+          )}
         </div>
-      )}
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ background: '#1e293b' }}>
-            <th style={th}>Rank</th>
-            <th style={th}>Student</th>
-            <th style={th}>Roll No.</th>
-            <th style={th}>Raw Score</th>
-            <th style={th}>Percentile</th>
-            <th style={th}>Grade</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((a, i) => (
-            <tr key={a._id} style={{ background: i % 2 === 0 ? '#0f172a' : '#1e293b' }}>
-              <td style={td}>#{i + 1}</td>
-              <td style={td}>{a.studentName}</td>
-              <td style={td}>{a.studentId}</td>
-              <td style={td}>{a.rawScore}</td>
-              <td style={td}>
-                <span style={{
-                  background: a.normalizedScore >= 60 ? '#14532d' : '#450a0a',
-                  color: a.normalizedScore >= 60 ? '#22c55e' : '#f87171',
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: '999px',
-                  fontSize: '0.85rem'
-                }}>
-                  {a.normalizedScore}th
-                </span>
-              </td>
-              <td style={td}>{getGrade(a.normalizedScore)}</td>
+        <div className={`status-banner ${released ? 'live' : 'hidden'}`}>
+          {released
+            ? '✅ Scores are LIVE — students can see their individual results now'
+            : '🔒 Scores are HIDDEN — students cannot see their results yet'}
+        </div>
+
+        <div className="stat-grid">
+          <div className="stat-tile" style={{ animationDelay: '0.05s' }}>
+            <div className="stat-val">{attempts.length}</div>
+            <div className="stat-label">Total Students</div>
+          </div>
+          <div className="stat-tile" style={{ animationDelay: '0.1s' }}>
+            <div className="stat-val">{avgPercentile}</div>
+            <div className="stat-label">Avg. Percentile</div>
+          </div>
+          <div className="stat-tile" style={{ animationDelay: '0.15s' }}>
+            <div className="stat-val">{topPercentile}</div>
+            <div className="stat-label">Top Percentile</div>
+          </div>
+        </div>
+
+        {analytics && analytics.concepts.length > 0 && (
+          <>
+            <div className="eyebrow" style={{ marginBottom: '1rem' }}>Concept-wise performance</div>
+            {analytics.concepts.map((c, i) => (
+              <div key={c.concept} className="concept-row" style={{ animationDelay: `${i * 0.08}s` }}>
+                <div className="concept-top">
+                  <span className="concept-name">
+                    {c.accuracyPercent < 50 ? '🚩 ' : ''}{c.concept}
+                  </span>
+                  <span
+                    className="concept-pct"
+                    style={{ color: c.accuracyPercent < 50 ? '#E7A0A2' : c.accuracyPercent < 75 ? '#E5C158' : '#6FBF96' }}
+                  >
+                    {c.accuracyPercent}%
+                  </span>
+                </div>
+                <div className="bar-track">
+                  <div
+                    className="bar-fill"
+                    style={{
+                      width: `${c.accuracyPercent}%`,
+                      background: c.accuracyPercent < 50 ? '#9B2226' : c.accuracyPercent < 75 ? '#C9A227' : '#2D6A4F'
+                    }}
+                  ></div>
+                </div>
+                <div className="concept-note">
+                  {c.correctCount} correct / {c.incorrectCount} incorrect out of {c.totalAttempts} attempts
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        <div className="eyebrow" style={{ margin: '2rem 0 1rem' }}>Leaderboard</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th><th>Student</th><th>Roll No.</th><th>Score</th><th>Percentile</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sorted.map((a, i) => (
+              <tr key={a._id} className={i % 2 !== 0 ? 'row-odd' : ''}>
+                <td><span className={`rank-stamp ${i === 0 ? 'top' : ''}`}>{i + 1}</span></td>
+                <td>{a.studentName}</td>
+                <td>{a.studentId}</td>
+                <td>{a.correctCount}/{a.totalQuestions}</td>
+                <td>
+                  <span className={`pctl-pill ${a.normalizedScore >= 50 ? 'high' : 'low'}`}>
+                    {a.normalizedScore}th
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-function StatCard({ label, value }) {
-  return (
-    <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', textAlign: 'center' }}>
-      <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#60a5fa' }}>{value}</div>
-      <div style={{ color: '#64748b', marginTop: '0.25rem' }}>{label}</div>
-    </div>
-  );
-}
-
-function getGrade(score) {
-  if (score >= 80) return '🏆 A';
-  if (score >= 65) return '✅ B';
-  if (score >= 50) return '📘 C';
-  return '❌ D';
-}
-
-function releaseBtn(color) {
-  return {
-    background: color,
-    color: 'white',
-    border: 'none',
-    padding: '0.6rem 1.2rem',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    fontSize: '0.85rem'
-  };
-}
-
-const th = {
-  padding: '0.75rem 1rem',
-  textAlign: 'left',
-  color: '#94a3b8',
-  fontWeight: '600',
-  borderBottom: '1px solid #334155'
-};
-
-const td = {
-  padding: '0.75rem 1rem',
-  color: '#e2e8f0',
-  borderBottom: '1px solid #1e293b'
-};

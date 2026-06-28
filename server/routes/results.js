@@ -17,6 +17,17 @@ router.get('/teacher/:examId', authMiddleware, teacherOnly, async (req, res) => 
 
     const normalized = normalizeScores(attempts.map(a => a.toObject()));
 
+    // Safeguard: with more than one submission, the top percentile must be exactly 100.
+    // If this ever fails, the normalization formula has regressed — fail loudly instead of
+    // silently shipping wrong percentiles to students.
+    if (normalized.length > 1) {
+      const maxPercentile = Math.max(...normalized.map(a => a.normalizedScore));
+      if (maxPercentile !== 100) {
+        console.error(`[INTEGRITY] Percentile bug detected for exam ${examId}: max percentile is ${maxPercentile}, expected 100`);
+        return res.status(500).json({ error: 'Score normalization error detected. Please contact support before releasing scores.' });
+      }
+    }
+
     for (const a of normalized) {
       await Attempt.findByIdAndUpdate(a._id, { normalizedScore: a.normalizedScore });
     }
