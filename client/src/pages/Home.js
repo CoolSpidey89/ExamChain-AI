@@ -12,7 +12,7 @@ export default function Home({ setPage, user }) {
       <div className="grain"></div>
 
       <div className="page-content">
-        <div className="eyebrow">For colleges &amp; institutions</div>
+        <div className="eyebrow">For schools, colleges &amp; institutions</div>
         <h1 className="brand">Exam<span className="accent">Chain</span></h1>
         <p className="subhead">
           Secure and improved system of <b>MCQ-based examinations</b> — built for fairness from the ground up.
