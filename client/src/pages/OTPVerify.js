@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import '../Auth.css';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -39,42 +40,39 @@ export default function OTPVerify({ email, setPage, setUser, redirectTo }) {
   }
 
   return (
-    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#1e293b', padding: '2.5rem', borderRadius: '16px', width: '400px', border: '1px solid #334155', textAlign: 'center' }}>
-        <h2 style={{ color: '#60a5fa', marginBottom: '0.5rem' }}>📧 Verify Your Email</h2>
-        <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.9rem' }}>
-          We sent a 6-digit code to <strong style={{ color: '#93c5fd' }}>{email}</strong>
-        </p>
+    <div className="auth-page">
+      <div className="auth-glow"><span className="g1"></span><span className="g2"></span></div>
+      <div className="auth-grain"></div>
 
-        <input
-          placeholder="Enter OTP"
-          value={otp}
-          onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          maxLength={6}
-          style={{
-            width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0',
-            padding: '0.9rem', borderRadius: '8px', fontSize: '1.5rem', textAlign: 'center',
-            letterSpacing: '0.3rem', fontFamily: 'monospace'
-          }}
-        />
+      <div className="auth-page-inner">
+        <div className="auth-card" style={{ textAlign: 'center' }}>
+          <div className="auth-card-head">
+            <div className="auth-h1">📧 Verify Your Email</div>
+            <div className="auth-sub">
+              We sent a 6-digit code to <strong style={{ color: '#E5C158' }}>{email}</strong>
+            </div>
+          </div>
 
-        {error && <p style={{ color: '#f87171', fontSize: '0.85rem', marginTop: '0.75rem' }}>{error}</p>}
-        {resendMsg && <p style={{ color: '#86efac', fontSize: '0.85rem', marginTop: '0.75rem' }}>{resendMsg}</p>}
+          {error && <div className="auth-error">⚠ {error}</div>}
+          {resendMsg && <div className="auth-success">✓ {resendMsg}</div>}
 
-        <button
-          onClick={handleVerify}
-          disabled={loading}
-          style={{ width: '100%', marginTop: '1.5rem', padding: '0.75rem', borderRadius: '8px', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 'bold', background: '#3b82f6' }}
-        >
-          {loading ? 'Verifying...' : 'Verify'}
-        </button>
+          <input
+            className="auth-otp-input"
+            placeholder="------"
+            value={otp}
+            onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            maxLength={6}
+          />
 
-        <p style={{ color: '#475569', fontSize: '0.8rem', marginTop: '1.5rem' }}>
-          Didn't get the code?{' '}
-          <span onClick={handleResend} style={{ color: '#60a5fa', cursor: resending ? 'default' : 'pointer' }}>
-            {resending ? 'Sending...' : 'Resend OTP'}
-          </span>
-        </p>
+          <button className="auth-submit-btn" onClick={handleVerify} disabled={loading} style={{ marginTop: '1.4rem' }}>
+            {loading ? 'Verifying...' : 'Verify'}
+          </button>
+
+          <div className="auth-switch-link">
+            Didn't get the code?{' '}
+            <span onClick={handleResend}>{resending ? 'Sending...' : 'Resend OTP'}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

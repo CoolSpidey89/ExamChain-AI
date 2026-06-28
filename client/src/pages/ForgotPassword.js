@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import '../Auth.css';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export default function ForgotPassword({ setPage }) {
-  const [step, setStep] = useState('request'); // request -> reset
+  const [step, setStep] = useState('request');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -41,68 +42,70 @@ export default function ForgotPassword({ setPage }) {
   }
 
   return (
-    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#1e293b', padding: '2.5rem', borderRadius: '16px', width: '400px', border: '1px solid #334155' }}>
-        <h2 style={{ color: '#60a5fa', marginBottom: '0.5rem' }}>🔑 Reset Password</h2>
+    <div className="auth-page">
+      <div className="auth-glow"><span className="g1"></span><span className="g2"></span></div>
+      <div className="auth-grain"></div>
 
-        {step === 'request' && (
-          <>
-            <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-              Enter your email to receive a reset code
-            </p>
-            <input
-              placeholder="Email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              style={inputStyle}
-            />
-            {error && <p style={{ color: '#f87171', fontSize: '0.85rem', marginTop: '0.75rem' }}>{error}</p>}
-            <button onClick={handleRequest} disabled={loading} style={{ ...btnStyle, marginTop: '1.5rem', width: '100%' }}>
-              {loading ? 'Sending...' : 'Send OTP'}
-            </button>
-          </>
-        )}
+      <div className="auth-page-inner">
+        <div className="auth-card">
+          <div className="auth-card-head">
+            <div className="auth-h1">🔑 Reset Password</div>
+          </div>
 
-        {step === 'reset' && (
-          <>
-            {message && <p style={{ color: '#86efac', fontSize: '0.85rem', marginBottom: '1rem' }}>{message}</p>}
-            <input
-              placeholder="Enter OTP"
-              value={otp}
-              onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              style={inputStyle}
-            />
-            <input
-              placeholder="New Password"
-              type="password"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
-              style={{ ...inputStyle, marginTop: '0.75rem' }}
-            />
-            {error && <p style={{ color: '#f87171', fontSize: '0.85rem', marginTop: '0.75rem' }}>{error}</p>}
-            <button onClick={handleReset} disabled={loading} style={{ ...btnStyle, marginTop: '1.5rem', width: '100%' }}>
-              {loading ? 'Resetting...' : 'Reset Password'}
-            </button>
-          </>
-        )}
+          {step === 'request' && (
+            <>
+              <div className="auth-sub" style={{ marginBottom: '1.4rem' }}>
+                Enter your email to receive a reset code
+              </div>
+              <div className="auth-field">
+                <label className="auth-field-label">Email</label>
+                <input
+                  type="email"
+                  placeholder="you@college.edu"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                />
+              </div>
+              {error && <div className="auth-error">⚠ {error}</div>}
+              <button className="auth-submit-btn" onClick={handleRequest} disabled={loading}>
+                {loading ? 'Sending...' : 'Send OTP'}
+              </button>
+            </>
+          )}
 
-        <p
-          onClick={() => setPage('home')}
-          style={{ color: '#475569', fontSize: '0.8rem', marginTop: '1.5rem', textAlign: 'center', cursor: 'pointer' }}
-        >
-          ← Back to home
-        </p>
+          {step === 'reset' && (
+            <>
+              {message && <div className="auth-success">✓ {message}</div>}
+              <div className="auth-field">
+                <label className="auth-field-label">OTP</label>
+                <input
+                  type="text"
+                  placeholder="6-digit code"
+                  value={otp}
+                  onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                />
+              </div>
+              <div className="auth-field">
+                <label className="auth-field-label">New Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                />
+              </div>
+              {error && <div className="auth-error">⚠ {error}</div>}
+              <button className="auth-submit-btn" onClick={handleReset} disabled={loading}>
+                {loading ? 'Resetting...' : 'Reset Password'}
+              </button>
+            </>
+          )}
+
+          <div className="auth-back-link" onClick={() => setPage('home')}>
+            ← Back to home
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-
-const inputStyle = {
-  width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0',
-  padding: '0.75rem', borderRadius: '8px', fontSize: '0.95rem'
-};
-
-const btnStyle = {
-  padding: '0.75rem', borderRadius: '8px', border: 'none', color: 'white',
-  cursor: 'pointer', fontWeight: 'bold', background: '#3b82f6'
-};
