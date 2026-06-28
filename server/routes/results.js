@@ -116,9 +116,10 @@ router.get('/student/:examId', authMiddleware, studentOnly, async (req, res) => 
       return res.status(404).json({ error: 'No submission found for this exam' });
     }
 
-    // IMPORTANT: only return their own percentile score, nothing else
     res.json({
       released: true,
+      correctCount: attempt.correctCount,
+      totalQuestions: attempt.totalQuestions,
       percentileScore: attempt.normalizedScore
     });
   } catch (err) {

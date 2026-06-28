@@ -38,18 +38,26 @@ export default function StudentResults({ examId }) {
 
   return (
     <div style={{ textAlign: 'center', padding: '5rem' }}>
-      <h2 style={{ color: '#60a5fa', fontSize: '1.5rem', marginBottom: '1rem' }}>Your Result</h2>
-      <div style={{
-        fontSize: '4rem',
-        fontWeight: 'bold',
-        color: '#22c55e',
-        margin: '1rem 0'
-      }}>
-        {data.percentileScore}th
+      <h2 style={{ color: '#60a5fa', fontSize: '1.5rem', marginBottom: '2rem' }}>Your Result</h2>
+
+      <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '2rem 2.5rem' }}>
+          <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#93c5fd', marginBottom: '0.5rem' }}>
+            {data.correctCount}/{data.totalQuestions}
+          </div>
+          <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Correct Answers</p>
+        </div>
+
+        <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '2rem 2.5rem' }}>
+          <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#22c55e', marginBottom: '0.5rem' }}>
+            {data.percentileScore}th
+          </div>
+          <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Percentile</p>
+        </div>
       </div>
-      <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>Percentile</p>
-      <p style={{ color: '#475569', marginTop: '1.5rem', fontSize: '0.9rem' }}>
-        You can only see your own score — not your classmates' results.
+
+      <p style={{ color: '#475569', marginTop: '2rem', fontSize: '0.9rem' }}>
+        Your percentile shows how you ranked among your peers, accounting for question difficulty.
       </p>
     </div>
   );

@@ -16,6 +16,8 @@ const AttemptSchema = new mongoose.Schema({
       difficulty: Number
     }
   ],
+  correctCount: Number,
+  totalQuestions: Number,
   rawScore: Number,
   normalizedScore: Number,
   timestamp: { type: Date, default: Date.now }

@@ -7,7 +7,6 @@ export default function StudentExam({ examId, user, setPage }) {
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
-  const [score, setScore] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
@@ -72,12 +71,11 @@ export default function StudentExam({ examId, user, setPage }) {
     }));
 
     try {
-      const res = await axios.post(
+      await axios.post(
         `${API}/exam/submit`,
         { studentId: user.rollNumber, studentName: user.name, examId, answers: answerArray },
         authHeader()
       );
-      setScore(res.data.rawScore);
       setSubmitted(true);
     } catch (err) {
       setError(err.response?.data?.error || 'Submission failed');
@@ -103,12 +101,12 @@ export default function StudentExam({ examId, user, setPage }) {
 
   if (submitted) return (
     <div style={{ textAlign: 'center', padding: '5rem' }}>
-      <h2 style={{ color: '#22c55e', fontSize: '2rem' }}>✅ Submitted!</h2>
-      <p style={{ color: '#94a3b8', marginTop: '1rem', fontSize: '1.1rem' }}>
-        Your weighted score: <strong style={{ color: '#60a5fa' }}>{score}/100</strong>
+      <h2 style={{ color: '#22c55e', fontSize: '2rem' }}>✅ Thank you for appearing in the exam</h2>
+      <p style={{ color: '#94a3b8', marginTop: '1rem', fontSize: '1.05rem' }}>
+        Your responses have been recorded.
       </p>
       <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
-        Final percentile will appear once your teacher releases scores.
+        Your score and percentile will be available once your teacher releases results.
       </p>
     </div>
   );

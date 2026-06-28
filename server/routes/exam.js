@@ -118,18 +118,20 @@ router.post('/submit', authMiddleware, studentOnly, async (req, res) => {
       };
     });
 
-    // If submitted late, we still grade it but flag it — teacher's call on policy.
-    // For now: score as 0 if late, since this is an integrity feature.
     const rawScore = isLate ? 0 : difficultyWeightedScore(gradedAnswers);
+    const correctCount = gradedAnswers.filter(a => a.correct).length;
+    const totalQuestions = gradedAnswers.length;
 
     attempt.studentName = studentName;
     attempt.answers = gradedAnswers;
     attempt.rawScore = rawScore;
+    attempt.correctCount = isLate ? 0 : correctCount;
+    attempt.totalQuestions = totalQuestions;
     attempt.normalizedScore = rawScore;
     attempt.submittedAt = now;
 
     await attempt.save();
-    res.json({ success: true, rawScore, isLate });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
