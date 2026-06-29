@@ -9,6 +9,7 @@ export default function StudentExamEntry({ setPage, setActiveExamId }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
+  const [slowNotice, setSlowNotice] = useState(false);
   const inputRef = useRef(null);
 
   function handleChange(e) {
@@ -18,26 +19,34 @@ export default function StudentExamEntry({ setPage, setActiveExamId }) {
   }
 
   async function handleJoin() {
-    if (code.length !== 6) {
-      triggerShake();
-      setError('Enter the full 6-character code');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/exams/code/${code}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setActiveExamId(res.data._id);
-      setPage('studentExam');
-    } catch (err) {
-      triggerShake();
-      setError(err.response?.data?.error || 'Invalid exam code');
-    }
-    setLoading(false);
+  if (code.length !== 6) {
+    triggerShake();
+    setError('Enter the full 6-character code');
+    return;
   }
+  setLoading(true);
+  setError('');
+
+  const slowTimer = setTimeout(() => {
+    setError('');
+    setSlowNotice(true);
+  }, 4000);
+
+  try {
+    const token = localStorage.getItem('token');
+    const res = await axios.get(`${API}/exams/code/${code}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setActiveExamId(res.data._id);
+    setPage('studentExam');
+  } catch (err) {
+    triggerShake();
+    setError(err.response?.data?.error || 'Invalid exam code');
+  }
+  clearTimeout(slowTimer);
+  setSlowNotice(false);
+  setLoading(false);
+}
 
   function triggerShake() {
     setShake(true);
@@ -63,6 +72,10 @@ export default function StudentExamEntry({ setPage, setActiveExamId }) {
 
           {error && <div className="auth-error">⚠ {error}</div>}
 
+          {slowNotice && (
+            <div className="auth-success">⏳ Waking up the server — this can take up to 30 seconds on first load.</div>
+          )}
+
           <div className="code-boxes" onClick={() => inputRef.current?.focus()}>
             {boxes.map((char, i) => (
               <div
@@ -85,7 +98,7 @@ export default function StudentExamEntry({ setPage, setActiveExamId }) {
           />
 
           <button className="auth-submit-btn student" onClick={handleJoin} disabled={loading}>
-            {loading ? 'Checking...' : 'Join Exam'}
+            {loading ? (slowNotice ? 'Waking server...' : 'Checking...') : 'Join Exam'}
           </button>
 
           <div className="entry-hint">Ask your teacher for the 6-character code</div>
